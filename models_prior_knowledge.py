@@ -107,10 +107,17 @@ class SuccessRateModel(ModelP):
     
 class EloModel(ModelP):
 
-    def __init__(self, alpha = 4.0, beta = 0.5):
+    # possibly different uncertainty function for student and problem
+    # but does not seem to make much difference
+    def __init__(self, alpha = 1.0, beta = 0.05, alphaS = None, betaS = None):
         ModelP.__init__(self)
-        self.name = "Elo "+`alpha`+" "+`beta`        
-        self.ufun = lambda x: alpha / (1 + beta * x)
+        self.ufun_problem = lambda x: alpha / (1 + beta * x)
+        if alphaS != None and betaS != None:
+            self.ufun_student = lambda x: alphaS / (1 + betaS * x)
+            self.name = "Elo "+`alpha`+" "+`beta` +" "+`alphaS`+" "+`betaS`
+        else:
+            self.ufun_student = lambda x: alpha / (1 + beta * x)        
+            self.name = "Elo "+`alpha`+" "+`beta`        
         self.G = {}
         self.D = {}
         self.history = {} # places
@@ -126,8 +133,8 @@ class EloModel(ModelP):
             self.history[place] = [0]
         prediction = sigmoid_shift(self.G[student] - self.D[place], random_factor(qtype))
         dif = (correct - prediction)
-        self.G[student] = self.G[student] + self.ufun(self.student_attempts[student]) * dif
-        self.D[place] = self.D[place] - self.ufun(self.place_attempts[place]) * dif
+        self.G[student] = self.G[student] + self.ufun_student(self.student_attempts[student]) * dif
+        self.D[place] = self.D[place] - self.ufun_problem(self.place_attempts[place]) * dif
         self.history[place].append(self.D[place])
         return prediction
 

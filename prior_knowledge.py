@@ -19,7 +19,7 @@ def compare_model_estimates(data, m1, m2):
     plt.show()
 
 def history_plots(data, states, selection = [ 178, 63, 196, 211, 67, 97,118 ]):
-    m = EloModel(1.0, 0.1)
+    m = EloModel()
     m.process_data(data)
     leg = []
     for place in selection:
@@ -36,7 +36,7 @@ def compare_model_predictions(data):
     metrics = [ ("AUC", log_auc), ("RMSE", log_rmse) ]  # ("MAE", log_mae)
  
     models = [ ConstantModel(0.9), GlobalRatioModel(), SuccessRatePlaceModel(),
-               EloModel(0.5,0), EloModel(1, 0.2), EloModel(4.0, 0.5) ]
+               EloModel(0.5,0), EloModel(), EloModel(4.0, 0.5) ]
 
     logger = MultipleRunLogger(1)    
     for m in models:
@@ -49,17 +49,21 @@ def elo_ufun_sensi_analysis(data):
     loggerR = MultipleRunLogger(1)
     loggerA = MultipleRunLogger(1)
     
-    for a in [ 0.5, 1.0, 1.5, 2.0, 3.0, 4.0 ]:
-        for b in [ 0, 0.2, 0.4, 0.6, 0.5, 0.8, 1.0]:
+    for a in [ 0.5, 0.75, 1.0, 1.25, 1.5, 1.75 ]:
+        for b in [ 0.02, 0.05, 0.1, 0.15, 0.2 ]:
             m = EloModel(a, b)
+#            m = EloModel(1.25, 0.1, a, b)
             m.process_data(data)
             loggerR.log(`a`, `b`,  log_rmse(m.log))
             loggerA.log(`a`, `b`,  log_auc(m.log))
     print "RMSE"
     loggerR.print_table(print_best = 2)
+    plt.imshow(loggerR.get_table())
     print "\nAUC"
-    loggerA.print_table(print_best = 1)    
-    
+    loggerA.print_table(print_best = 1)
+    plt.figure()
+    plt.imshow(loggerA.get_table())
+    plt.show()    
 
 ################## likelihood test ##################33
 
@@ -108,9 +112,9 @@ def main():
     data = read_data(datafile)
     ## TODO nejak hezceji ?
     if sys.argv[1] == "compare1":
-        compare_model_estimates(data, Rasch(), EloModel(1, 0.1))
+        compare_model_estimates(data, Rasch(), EloModel())
     elif sys.argv[1] == "compare2":
-        compare_model_estimates(data, SuccessRateModel(), EloModel(1, 0.1))
+        compare_model_estimates(data, SuccessRateModel(), EloModel())
     elif sys.argv[1] == "predictions":
         compare_model_predictions(data)        
     elif sys.argv[1] == "history":

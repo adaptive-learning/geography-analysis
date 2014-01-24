@@ -89,7 +89,6 @@ def save_resultsDG(data):
     
 #save_results_csv()
 
-    
 ###################
 
 if __name__ == "__main__":
@@ -100,5 +99,6 @@ if __name__ == "__main__":
     process("data/data_first.csv", exportfile, only_first = 1)
     process("data/data_first60.csv", exportfile, only_first = 1, pmin = 60)
     repeated_attempts("data/repeated_attempts.csv", exportfile)
-    data = read_data("data/data_first.csv")
-    save_resultsDG(data)
+    if not(len(sys.argv) > 2 and sys.argv[2] == 'fast'):    
+        data = read_data("data/data_first.csv")
+        save_resultsDG(data)

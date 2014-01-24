@@ -17,6 +17,8 @@ def get_config(continent):
         }
     if continent == "Europe":
         config["bounds"] = { "mode": "bbox", "data": [-15, 36, 50, 70] }
+    if continent == "Central America":
+        config["layers"][0]["filter"] = lambda state: state['continent'] == "North America" and not (state['name'] in [ 'United States','Canada','Greenland' ])
     return config
 
 ### probabilities (values in [0,1]) to colors
@@ -48,11 +50,10 @@ def gen_style(gray = 0):
 def make_maps(gray = 0):
     gen_style(gray)
     css = open('tmp-style.css').read()
-    for continent in [ "Europe", "Asia" ]:
+    for continent in [ "Africa", "Europe", "Asia", "South America", "Central America" ]:
         name = 'results/'+continent+'.svg'
         print "Creating", name
         config = get_config(continent)
-        print config
         K.generate(config,
                    outfile = name,
                    stylesheet = css)

@@ -229,3 +229,10 @@ class MultipleRunLogger:
         if print_best:
             print "Best:", best[1], best[2], round(best[0], 3)
         
+    def get_table(self):
+        t = np.zeros((len(self.row_names), len(self.col_names)))
+        for i in range(len(self.row_names)):
+            for j in range(len(self.col_names)):
+                t[i][j] = float(sum(self.data[self.row_names[i],self.col_names[j]])) / len(self.data[self.row_names[i],self.col_names[j]])
+        return t
+        # use plt.imshow(t)
