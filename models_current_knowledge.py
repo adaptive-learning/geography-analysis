@@ -9,22 +9,27 @@ class ModelC:
 
     def process_data(self, data, verbose = 0):
         self.log = []
+        self.logmap = {}
         self.verbose = verbose
         for s, p in data.keys():
+            # save context
+            self.sp = (s,p)
+            self.i = 1
+            if verbose:
+                print "\n", s, p
             self.process_sequence(
                 data[s,p]['initskill'],
                 data[s,p]['ans'],
                 data[s,p]['qtype'],
                 data[s,p]['time']
                 )
-            if verbose:
-                print "\n", s, p
 
-    # todo - tady si pripadne pamatovat kontext a pridelat logmap
     def save_to_log(self, pred, ans):
         self.log.append((pred, ans))
+        self.logmap[self.sp[0], self.sp[1], self.i] = (pred, ans)
+        self.i += 1
         if self.verbose:
-            print pred, ans, ";", 
+            print "\t", ans, pred
             
     # implementuji dilci modely, vraci seznam dvojic (pred, ans)
     def process_sequence(self, initskill, ans, qtype, time):
@@ -68,7 +73,7 @@ class EloBasic(ModelC):
 
 class EloTime(ModelC):
 
-    def __init__(self, time_effect = 1.0, alpha = 0.5):
+    def __init__(self, time_effect = 160.0, alpha = 2.0):
         self.alpha = alpha
         self.time_effect = time_effect
 
@@ -77,13 +82,14 @@ class EloTime(ModelC):
         
     def process_sequence(self, initskill, ans, qtype, time):
         skill = initskill
-        for i in range(len(ans)):
-            local_skill = skill
-            if i > 0:
-                timedif = (time[i]-time[i-1]) / 100
-                local_skill += self.time_effect*math.exp(-timedif)
+        skill += self.alpha * (ans[0] - sigmoid_shift(skill, random_factor(qtype[0])))
+        for i in range(1, len(ans)):
+            timedif = time[i]-time[i-1]
+            local_skill = skill + float(self.time_effect) / ( 1 + timedif )
             pred = sigmoid_shift(local_skill, random_factor(qtype[i]))
-            if i > 0: self.save_to_log(pred, ans[i])
+            self.save_to_log(pred, ans[i])
+            # variabilni K podle casu - toto predikce jenom zhorsuje, coz me trochu prekvapuje...
+#            K = self.alpha * (1 - 1 / (1 + float(timedif) / (1+self.time_effect)))
             skill += self.alpha * (ans[i] - pred)            
                         
 class TimeDecay(ModelC):
