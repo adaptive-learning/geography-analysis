@@ -20,7 +20,7 @@ def read_json(filename):
     f.close()
     return data    
 
-def process_states(filename = "data/staty.json", data = None):
+def process_states(filename = "data/place.json", data = None):
     info = read_json(filename)
     states = {}
     codes = {}
@@ -33,6 +33,14 @@ def process_states(filename = "data/staty.json", data = None):
                 states[place] = 'unknown'
                 codes[place] = 'XX'        
     return states, codes
+
+def process_placerelation(filename = "data/placerelation.json"):
+    info = read_json(filename)
+    onmap = {}
+    for r in info:
+        if r["fields"]["type"] == 1:
+            onmap[r["fields"]["place"]] = r["fields"]["related_places"]
+    return onmap
 
 def add_norm_user_times(d):
     meant = {}
@@ -69,6 +77,9 @@ def read_combined_data(data_repeated, fileD = "data/raschD.csv", fileG = "data/r
         p = line.rstrip().split(';')            
         ans, qtype, time = [],[],[]
         ok = 1
+        student = int(p[0])
+        place = int(p[1])
+        if not place in D: continue  # nove pridano, beru jen mista, pro ktera mam dost dat a tudiz odhad D        
         for resp in p[2].split(':'):
             m = re.match(r'(\d)\((\d+),(\d+)\)',resp)
             if m: 
@@ -78,9 +89,8 @@ def read_combined_data(data_repeated, fileD = "data/raschD.csv", fileG = "data/r
             else:
                 ok = 0
         if ok:
-            student = int(p[0])
-            place = int(p[1])
-            data[student, place] = {
+            if not (place in data): data[place] = {}
+            data[place][student] = {
                 'init': sigmoid(G.get(student,0) - D.get(place,0)),
                 'initskill': G.get(student,0) - D.get(place,0),
                 'ans': ans, 'qtype':qtype, 'time':time, 'n': len(ans) }

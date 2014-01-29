@@ -7,22 +7,26 @@ class ModelC:
     def __init__(self):
         pass
 
-    def process_data(self, data, verbose = 0):
+    def process_data_place(self, data, p):
+        for s in data[p].keys():
+            self.sp = (s,p)
+            self.i = 1
+            if self.verbose: print "\n", s, p
+            self.process_sequence(
+                data[p][s]['initskill'],
+                data[p][s]['ans'],
+                data[p][s]['qtype'],
+                data[p][s]['time'])
+    
+    def process_data(self, data, place = None, verbose = 0):
         self.log = []
         self.logmap = {}
         self.verbose = verbose
-        for s, p in data.keys():
-            # save context
-            self.sp = (s,p)
-            self.i = 1
-            if verbose:
-                print "\n", s, p
-            self.process_sequence(
-                data[s,p]['initskill'],
-                data[s,p]['ans'],
-                data[s,p]['qtype'],
-                data[s,p]['time']
-                )
+        if place == None:
+            for p in data.keys():
+                self.process_data_place(data,p)
+        else:
+            self.process_data_place(data, place)                
 
     def save_to_log(self, pred, ans):
         self.log.append((pred, ans))
@@ -82,7 +86,7 @@ class EloBasic(Elo):
 class PFA(ModelC): 
 
 #    def __init__(self, Kgood = 1.0, Kbad = 0.8, time_effect = 160):  # opt. setting for data with mintimestep 600
-    def __init__(self, Kgood = 0.8, Kbad = 0.4, time_effect = 60):
+    def __init__(self, Kgood = 0.8, Kbad = 0.2, time_effect = 60):
         self.Kgood = Kgood
         self.Kbad = Kbad
         self.time_effect = time_effect

@@ -13,7 +13,7 @@ def sensi_analysis_roc(data, Model, values):
         do_roc(*zip(*m.log))
     plt.show()
 
-def sensi_analysis(data, Model, values, par_name = None, do_plot = 1, verbose=1):
+def sensi_analysis(data, Model, values, par_name = None, do_plot = 1, verbose=1, place = None):
     rmses = []
     best = 0
     for i in range(len(values)):
@@ -24,7 +24,7 @@ def sensi_analysis(data, Model, values, par_name = None, do_plot = 1, verbose=1)
         else:
             args = { par_name: pval }
             m = Model(**args)
-        m.process_data(data)
+        m.process_data(data, place)
         r = log_rmse(m.log)
         if verbose: print "\tRMSE", round(r,3)
         rmses.append(r)
@@ -33,7 +33,27 @@ def sensi_analysis(data, Model, values, par_name = None, do_plot = 1, verbose=1)
     if do_plot:
         plt.plot(values, rmses)
         plt.show()
-    
+
+def PFA_sensi_analysis_per_place(data):
+    states, _ = process_states()
+    D = read_dict("data/raschD.csv")
+    for place in data:
+        if len(data[place].keys()) <  140: continue
+        best = float("inf")
+        bestcomb = None
+        for Kg in [ 0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4 ]:
+            for Kb in [-0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6]:
+                m = PFA(Kg, Kb)
+                m.process_data(data, place)
+                r = log_rmse(m.log)
+                if r < best:
+                    best = r
+                    bestcomb = (Kg, Kb)
+        print states[place][:15].ljust(18).encode("UTF8"),\
+            round(sigmoid(-D.get(place,0)), 2),"\t",\
+            bestcomb[0],"\t",bestcomb[1]
+                
+        
 def compare_models(data, models):
     leg = []
     for m in models:
@@ -91,7 +111,7 @@ def show_prediction_classes(data, models):
     
 ######################### MAIN ######################
 
-def run_sensi_analysis(data, choice):
+def run_sensi_analysis(data, choices):
     options = {
         'BKT' : [ BKT, [0.3, 0.4, 0.5, 0.55, 0.6, 0.7 ] ],
         'Elo' : [ EloBasic, [0.75, 1.0,  1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75] ],
@@ -101,35 +121,37 @@ def run_sensi_analysis(data, choice):
         'PFAb': [ PFA, [ -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2], "Kbad"],
         'PFAt': [ PFA, [ 0, 40, 60, 80, 120, 160 ], "time_effect"]
         }
-    if choice in options.keys():
-        sensi_analysis(data, *options[choice])
-    else:
+    if len(choices) == 0:
         for c in options.keys():
             print "\n",c
             sensi_analysis(data, *options[c], do_plot=0, verbose=0)
+    else:
+        choice = choices[0]
+        if len(choices) > 1: place = int(choices[1])
+        else: place = None
+        sensi_analysis(data, *options[choice], place=place)
 
-def run_model_comparison(data, choice):
+def run_model_comparison(data, choices):
     options = {
-        '': [ BKT(), Elo(),  PFA(), TimeDecay(0.1) ],
-        '2': [ BKT(0.3), Elo(0.3,100), PFA ],
+        '0': [ BKT(), Elo(),  PFA(), TimeDecay(0.1) ],
+        '1': [ BKT(0.3), Elo(0.3,100), PFA() ],
         }
-    if not choice in options:
-        choice = ''
-    compare_models(data, options[choice])
+    if len(choices) == 0 or not choices[0] in options:
+        choices = [ '0' ]
+    compare_models(data, options[choices[0]])
             
 def main():
     if len(sys.argv) < 2:
         print "Gimme command"
         return
     datafile = "data/repeated_attempts.csv"
-    arg2 = ""
-    if len(sys.argv) > 2:
-        arg2 = sys.argv[2]
     data = read_combined_data(datafile)
     if sys.argv[1] == "sensi":
-        run_sensi_analysis(data, arg2) 
+        run_sensi_analysis(data, sys.argv[2:]) 
+    if sys.argv[1] == "sensiPFA":
+        PFA_sensi_analysis_per_place(data) 
     elif sys.argv[1] == "compare":
-        run_model_comparison(data, arg2)
+        run_model_comparison(data, sys.argv[2:])
     elif sys.argv[1] == "show":
         show_predictions(data, PFA(), Elo()  )        
     elif sys.argv[1] == "classes":
