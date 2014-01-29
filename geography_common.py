@@ -107,12 +107,12 @@ def split_data_user_level(data, ratio = 0.8):
 
 ################## small helper functions ################
 
-# ad hoc value 0.05
+# ad hoc values
 def slip(qtype):
-    return 0.05
+    return 0.02
 
 def guess(qtype):
-    if qtype == 10: return 0.05
+    if qtype == 10: return 0.04 # should be map dependent
     return 1.0 / (qtype - 10*(qtype//10))
 
 def random_factor(qtype):
@@ -141,6 +141,27 @@ def rmse(estimated, correct):
 
 def log_rmse(log):
     return rmse(*zip(*log)) # asi ne moc efektivni...
+
+# def logloss(estimated, correct):
+#     # prepsat vektorove?
+#     s = 0.0
+#     n = len(correct)
+#     for i in range(n):
+#         if correct[i]:
+#             s += math.log(estimated[i])
+#         else:
+#             s += math.log(1-estimated[i])
+#     return - s / n
+
+def log_logloss(log):
+    s = 0.0
+    n = len(log)
+    for i in range(n):
+        if log[i][1]:
+            s += math.log(log[i][0])
+        else:
+            s += math.log(max(1-log[i][0], 0.02)) # trochu hack
+    return - s / n
 
 def mae(estimated, correct):
     return np.mean(np.absolute(np.array(correct) - np.array(estimated)))

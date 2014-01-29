@@ -39,7 +39,7 @@ def process(foutput, finput, umin = 10, pmin = 30, only_first = 0, only10 = 0):
     f.close()
     out.close()
 
-def repeated_attempts(foutput, finput, minlen = 4):
+def repeated_attempts(foutput, finput, minlen = 3, mintimestep = 0):
     print "Creating", foutput
     f = open(finput)
     out = open(foutput,"w")
@@ -54,20 +54,33 @@ def repeated_attempts(foutput, finput, minlen = 4):
         else: c = "0"            
         if not up in userplace: userplace[up] = []
         userplace[up].append((int(p[0]), c, p[4]+p[7], datetime.datetime.strptime(p[5], '%Y-%m-%d %H:%M:%S')))
+    stats_all, stats_ones = 0.0, 0
+    all_ones = {}
+                
     for up in userplace.keys():
-        if len(userplace[up]) >= minlen:
+        if len(userplace[up]) >= minlen:  
             line = up+";" 
-            fd = None
+            first_date = None
+            prev_date = None
+            local_stats_all, local_stats_ones = 0,0
             for pk, c, t, d in sorted(userplace[up]):
-                if fd == None:
-                    fd = d
-                    dif = 0
+                if first_date == None:
+                    first_date = d
+                    dif, difprev = 0, 0
                 else:
-                    line +=  ":"
-                    dif = int((d - fd).total_seconds())
-                line += c+"("+t+','+`dif`+")"
-            out.write(line+"\n")
+                    dif = int((d - first_date).total_seconds())
+                    difprev = int((d - prev_date).total_seconds())
+                if dif==0 or difprev > mintimestep:
+                    line += c+"("+t+','+`dif`+"):"
+                    local_stats_all +=1
+                    if c=="1": local_stats_ones += 1
+                prev_date = d
+            if local_stats_all >= minlen:
+                out.write(line[:-1]+"\n")
+                stats_all += local_stats_all
+                stats_ones += local_stats_ones
     out.close()
+    print "  Ratio correct:", round(stats_ones / stats_all, 3)
 
 ########## save results for use in 2. phase ##############
     
@@ -98,7 +111,7 @@ if __name__ == "__main__":
     process("data/data.csv", exportfile)
     process("data/data_first.csv", exportfile, only_first = 1)
     process("data/data_first60.csv", exportfile, only_first = 1, pmin = 60)
-    repeated_attempts("data/repeated_attempts.csv", exportfile)
-    if not(len(sys.argv) > 2 and sys.argv[2] == 'fast'):    
+    repeated_attempts("data/repeated_attempts.csv", exportfile, mintimestep = 0)
+    if len(sys.argv) > 2 and sys.argv[2] == 'DG':    
         data = read_data("data/data_first.csv")
         save_resultsDG(data)

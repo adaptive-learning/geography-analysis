@@ -65,6 +65,15 @@ def elo_ufun_sensi_analysis(data):
     plt.imshow(loggerA.get_table())
     plt.show()    
 
+################## various tests ###############3
+
+def solved_difficulty(data):
+    solved = data.place.value_counts()
+    e = EloModel()
+    e.process_data(data)
+    scatter_dicts_with_same_keys(solved, e.D)
+    plt.show()
+    
 ################## likelihood test ##################33
 
 def get_avgloglikelihoods(data, model):
