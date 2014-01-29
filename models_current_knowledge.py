@@ -81,8 +81,8 @@ class EloBasic(Elo):
 
 class PFA(ModelC): 
 
-    def __init__(self, Kgood = 1.0, Kbad = 0.8, time_effect = 160):    
-#    def __init__(self, Kgood = 0.8, Kbad = 0.4, time_effect = 60):
+#    def __init__(self, Kgood = 1.0, Kbad = 0.8, time_effect = 160):  # opt. setting for data with mintimestep 600
+    def __init__(self, Kgood = 0.8, Kbad = 0.4, time_effect = 60):
         self.Kgood = Kgood
         self.Kbad = Kbad
         self.time_effect = time_effect
