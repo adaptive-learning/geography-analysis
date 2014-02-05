@@ -71,15 +71,21 @@ def solved_difficulty():
     plt.legend(leg, loc = 1)
     plt.show()
 
-def dif_hist():
+def histDG():
+    G = read_dict("data/raschG.csv")
+    plt.hist(G.values())    
+    plt.figure()
     D = read_dict("data/raschD.csv")
     onmap = process_placerelation()
     states, _ = process_states()
     continents = [ 227, 228, 229, 230, 231 ]
     d = [ [ D[p] for p in onmap[c] ]
           for c in continents ]
-    plt.hist(d, histtype='bar',normed=True) # stacked=True .. mi nefunguje, stara verze matplotlib?...
+    plt.hist(d, 9, histtype='barstacked') 
     plt.legend([states[c] for c in continents], loc=2)
+    plt.show()
+
+def skill_hist():
     plt.show()
     
 def main():
@@ -93,8 +99,7 @@ def main():
     elif sys.argv[1] == "soldif":    
         solved_difficulty()
     elif sys.argv[1] == "hist":    
-        dif_hist()
-
+        histDG()
         
 if __name__ == "__main__":
     main()

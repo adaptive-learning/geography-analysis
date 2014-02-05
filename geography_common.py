@@ -7,7 +7,7 @@ import math
 import random
 import re
 from sklearn.metrics import roc_curve, auc
-from scipy.stats import spearmanr
+from scipy.stats import spearmanr, pearsonr
 import pylab as plt
 
 # lot of small stuff doing rutine work... bit messy
@@ -53,6 +53,7 @@ def add_norm_user_times(d):
 def read_data(filename = "data/data.csv"):
     d = pd.read_csv(filename)
     d.time[d.time > 30000] = 30000 # time cut-off 30s 
+    d.time[d.time < 0] = 200 # rare error in data
     add_norm_user_times(d)
     return d
 
@@ -75,17 +76,18 @@ def read_combined_data(data_repeated, fileD = "data/raschD.csv", fileG = "data/r
     data = {}
     for line in f.readlines():
         p = line.rstrip().split(';')            
-        ans, qtype, time = [],[],[]
+        ans, qtype, time, rtime = [],[],[],[]
         ok = 1
         student = int(p[0])
         place = int(p[1])
         if not place in D: continue  # nove pridano, beru jen mista, pro ktera mam dost dat a tudiz odhad D        
         for resp in p[2].split(':'):
-            m = re.match(r'(\d)\((\d+),(\d+)\)',resp)
+            m = re.match(r'(\d)\((\d+),(\d+),([\d\.]+)\)',resp)
             if m: 
                 ans.append(int(m.group(1)))
                 qtype.append(int(m.group(2)))
                 time.append(int(m.group(3)))
+                rtime.append(float(m.group(4)))
             else:
                 ok = 0
         if ok:
@@ -93,7 +95,7 @@ def read_combined_data(data_repeated, fileD = "data/raschD.csv", fileG = "data/r
             data[place][student] = {
                 'init': sigmoid(G.get(student,0) - D.get(place,0)),
                 'initskill': G.get(student,0) - D.get(place,0),
-                'ans': ans, 'qtype':qtype, 'time':time, 'n': len(ans) }
+                'ans': ans, 'qtype':qtype, 'time':time, 'rtime':rtime, 'n': len(ans) }
     f.close()
     return data
 
@@ -152,6 +154,21 @@ def rmse(estimated, correct):
 def log_rmse(log):
     return rmse(*zip(*log)) # asi ne moc efektivni...
 
+def log_rmse2(log):
+    s = 0.0
+    n = len(log)
+    for i in range(n):
+        if log[i][1]: s += (1-log[i][0])**2
+        else:         s += 2 * log[i][0]**2  # dvakrat vetsi penalizace za 0
+    return math.sqrt(s / n)
+
+def power4_error(estimated, correct):
+    return (np.mean((np.array(correct) - np.array(estimated))**4))**0.25
+
+def log_power4_error(log):
+    return power4_error(*zip(*log)) # asi ne moc efektivni...
+
+
 # def logloss(estimated, correct):
 #     # prepsat vektorove?
 #     s = 0.0
@@ -197,6 +214,9 @@ def pairwise_sum(a, b):
 
 def spearman(x,y):
     return spearmanr(x,y)[0]
+
+def pearson(x,y):
+    return pearsonr(x,y)[0]
 
 ############# visualization and analysis helpers ##########
 

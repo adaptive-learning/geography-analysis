@@ -2,6 +2,8 @@ from geography_common import *
 
 # models of current knowledge based on sequence of repeated attempts
 
+RTIME_MEAN = 11.84
+
 class ModelC:
 
     def __init__(self):
@@ -16,7 +18,8 @@ class ModelC:
                 data[p][s]['initskill'],
                 data[p][s]['ans'],
                 data[p][s]['qtype'],
-                data[p][s]['time'])
+                data[p][s]['time'],
+                data[p][s]['rtime'])
     
     def process_data(self, data, place = None, verbose = 0):
         self.log = []
@@ -36,7 +39,7 @@ class ModelC:
             print "\t", ans, pred
             
     # implementuji dilci modely, vraci seznam dvojic (pred, ans)
-    def process_sequence(self, initskill, ans, qtype, time):
+    def process_sequence(self, initskill, ans, qtype, time, rtime):
         pass 
 
 
@@ -48,7 +51,7 @@ class BKT(ModelC):
     def __str__(self):
         return "BKT " + `self.plearn` 
         
-    def process_sequence(self, initskill, ans, qtype, time):
+    def process_sequence(self, initskill, ans, qtype, time, rtime):
         P = sigmoid(initskill)
         for i in range(len(ans)):
             qt = qtype[i]
@@ -62,14 +65,15 @@ class BKT(ModelC):
                         
 class Elo(ModelC):
 
-    def __init__(self, alpha = 2.0, time_effect = 160.0):
+    def __init__(self, alpha = 2.0, time_effect = 160.0, rtime_effect = 0):
         self.alpha = alpha
         self.time_effect = time_effect
+        self.rtime_effect = rtime_effect
 
     def __str__(self):
-        return  "Elo " + `self.alpha` + ' '+`self.time_effect`
+        return  "Elo " + `self.alpha` + ' '+`self.time_effect` + ' '+ `self.rtime_effect`
         
-    def process_sequence(self, initskill, ans, qtype, time):
+    def process_sequence(self, initskill, ans, qtype, time, rtime):
         skill = initskill
         skill += self.alpha * (ans[0] - sigmoid_shift(skill, random_factor(qtype[0])))
         for i in range(1, len(ans)):
@@ -77,15 +81,18 @@ class Elo(ModelC):
             local_skill = skill + float(self.time_effect) / ( 1 + timedif )
             pred = sigmoid_shift(local_skill, random_factor(qtype[i]))
             self.save_to_log(pred, ans[i])
-            skill += self.alpha * (ans[i] - pred)
-
+            
+            alpha = self.alpha * (1 + (RTIME_MEAN - rtime[i]) * self.rtime_effect)
+            skill += alpha * (ans[i] - pred)
+            
 class EloBasic(Elo):
     def __init__(self, alpha = 2.0):
         Elo.__init__(self, alpha, 0)
-
+        
 class PFA(ModelC): 
 
 #    def __init__(self, Kgood = 1.0, Kbad = 0.8, time_effect = 160):  # opt. setting for data with mintimestep 600
+#    def __init__(self, Kgood = 0.4, Kbad = -0.6, time_effect = 60): # rmse2
     def __init__(self, Kgood = 0.8, Kbad = 0.2, time_effect = 60):
         self.Kgood = Kgood
         self.Kbad = Kbad
@@ -94,7 +101,7 @@ class PFA(ModelC):
     def __str__(self):
         return  "PFA " + `self.Kgood` + " " + `self.Kbad` + " " + `self.time_effect`
         
-    def process_sequence(self, initskill, ans, qtype, time):
+    def process_sequence(self, initskill, ans, qtype, time, rtime):
         skill = initskill
         for i in range(len(ans)):
             timedif = max(0, time[i]-time[i-1])
@@ -105,6 +112,7 @@ class PFA(ModelC):
             else: skill += self.Kbad
 
 ########## outdated, probably poor model, not worth further extensions
+###### hmmm.... with rmse2 quite good...
             
 class TimeDecay(ModelC):
 
@@ -116,7 +124,7 @@ class TimeDecay(ModelC):
         return self.name
         
     # extra naive
-    def process_sequence(self, initskill, ans, qtype, time):
+    def process_sequence(self, initskill, ans, qtype, time, rtime):
         padding = 5
         tmp = [ sigmoid(initskill) ] * padding
         tmp.extend(ans)

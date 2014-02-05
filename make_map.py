@@ -30,7 +30,10 @@ def color_gray(val):
 def color_rgspectrum(val): 
     (r,g,b) = hsv_to_rgb(0.37*val,1,1)    
     (r,g,b) = map(lambda x: int(255*x), (r,g,b))
-    return "'rgb("+`r`+','+`g`+','+`b`+")'"    
+    return "'rgb("+`r`+','+`g`+','+`b`+")'"
+
+def is_ascii(s):
+    return all(ord(c) < 128 for c in s)
 
 def gen_style(gray = 0):
     f = open('tmp-style.css', 'w')
@@ -44,7 +47,12 @@ def gen_style(gray = 0):
                 color = color_gray(val)
             else:
                 color = color_rgspectrum(val)
-            f.write('.states[iso_a2='+code+"] { fill: "+color+"; }\n")
+            if code == "XS": # hack kvuli chybejicimu kodu; TODO Kosovo a dalsi
+                f.write(".states[name=Somaliland] { fill: "+color+"; }\n")
+            elif is_ascii(code) and not (" " in code):
+                f.write('.states[iso_a2='+code+"] { fill: "+color+"; }\n")
+#            else:
+#                print code, " bad code"                
     f.close()
 
 def make_maps(gray = 0):
@@ -59,4 +67,4 @@ def make_maps(gray = 0):
                    stylesheet = css)
 
 if __name__ == "__main__":
-    make_maps()
+    make_maps(1)

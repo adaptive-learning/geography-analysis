@@ -2,6 +2,7 @@
 
 import sys
 import datetime
+import math
 from geography_common import read_data
 from models_prior_knowledge import Rasch
 
@@ -52,8 +53,12 @@ def repeated_attempts(foutput, finput, minlen = 3, mintimestep = 0):
         up = p[1]+";"+p[2]
         if p[2] == p[3]: c = "1"
         else: c = "0"            
+        rtime = int(p[6])
+        if rtime > 30000: rtime = 30000
+        if rtime < 200: rtime = 200
+        rtime = round(math.log(rtime, 2),2)
         if not up in userplace: userplace[up] = []
-        userplace[up].append((int(p[0]), c, p[4]+p[7], datetime.datetime.strptime(p[5], '%Y-%m-%d %H:%M:%S')))
+        userplace[up].append((int(p[0]), c, p[4]+p[7], datetime.datetime.strptime(p[5], '%Y-%m-%d %H:%M:%S'), rtime))
     stats_all, stats_ones = 0.0, 0
     all_ones = {}
                 
@@ -63,7 +68,7 @@ def repeated_attempts(foutput, finput, minlen = 3, mintimestep = 0):
             first_date = None
             prev_date = None
             local_stats_all, local_stats_ones = 0,0
-            for pk, c, t, d in sorted(userplace[up]):
+            for pk, c, t, d, rt in sorted(userplace[up]):
                 if first_date == None:
                     first_date = d
                     dif, difprev = 0, 0
@@ -71,7 +76,7 @@ def repeated_attempts(foutput, finput, minlen = 3, mintimestep = 0):
                     dif = int((d - first_date).total_seconds())
                     difprev = int((d - prev_date).total_seconds())
                 if dif==0 or difprev > mintimestep:
-                    line += c+"("+t+','+`dif`+"):"
+                    line += c+"("+t+','+`dif`+","+`rt`+"):"
                     local_stats_all +=1
                     if c=="1": local_stats_ones += 1
                 prev_date = d

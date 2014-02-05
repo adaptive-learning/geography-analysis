@@ -99,6 +99,42 @@ def likelihood_test(data):
     plt.figure()
     plt.scatter(sorted_values(m.G), sorted_values(avg_ll))
     plt.show()
+
+def on_cont(places, onmap, continents):
+    out = []
+    for p in places:
+        ok = False
+        for c in continents:
+            if p in onmap[c]: ok = True
+        out.append(ok)
+    return out
+
+def subskills(data):
+    onmap = process_placerelation()
+    states, _ = process_states()
+    cont1 = [ 230, 231]
+    cont2 = [ 227, 228, 229 ]
+    data1 = data[ on_cont(data.place, onmap, cont1) ]
+    data2 = data[ on_cont(data.place, onmap, cont2) ]
+    m1, m2 = EloModel(), EloModel()
+    print "data read"
+    m1.process_data(data1)
+    print "m1 ok"
+    m2.process_data(data2)
+    print "m2 ok"
+    skills = [] 
+    for s in m1.G.keys():
+        if not s in m2.G: continue
+        if m1.student_attempts[s] < 15: continue
+        if m2.student_attempts[s] < 15: continue
+        skills.append((m1.G[s], m2.G[s]))
+    print "spearman", round(spearman(*zip(*skills)),2)
+    print "pearson", round(pearson(*zip(*skills)),2)
+    plt.scatter(*zip(*skills))
+    plt.xlabel(",".join([states[c] for c in cont1]))
+    plt.ylabel(",".join([states[c] for c in cont2]))
+    plt.show()
+    
     
 ######################### MAIN ######################
 
@@ -124,6 +160,8 @@ def main():
         elo_ufun_sensi_analysis(data)
     elif sys.argv[1] == "likelihood":
         likelihood_test(data)
+    elif sys.argv[1] == "subskills":
+        subskills(data)
     else:
         print "Dont know what", sys.argv[1], "means."
         
