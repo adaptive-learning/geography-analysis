@@ -93,24 +93,52 @@ class PFA(ModelC):
 
 #    def __init__(self, Kgood = 1.0, Kbad = 0.8, time_effect = 160):  # opt. setting for data with mintimestep 600
 #    def __init__(self, Kgood = 0.4, Kbad = -0.6, time_effect = 60): # rmse2
-    def __init__(self, Kgood = 0.8, Kbad = 0.2, time_effect = 60):
+    def __init__(self, Kgood = 0.8, Kbad = 0.2, time_effect = 60, rtime_effect = 0):
+        self.Kgood = Kgood
+        self.Kbad = Kbad
+        self.time_effect = time_effect
+        self.rtime_effect = rtime_effect
+
+    def __str__(self):
+        return  "PFA " + `self.Kgood` + " " + `self.Kbad` + " " + `self.time_effect` +  ' '+ `self.rtime_effect`
+        
+    def process_sequence(self, initskill, ans, qtype, time, rtime):
+        skill = initskill
+        for i in range(len(ans)):
+            local_skill = skill
+            if i > 0:
+                timedif = max(0, time[i]-time[i-1])
+                local_skill += float(self.time_effect) / ( 1 + timedif )
+            pred = sigmoid_shift(local_skill, random_factor(qtype[i]))
+            if i > 0: self.save_to_log(pred, ans[i])
+            if ans[i]: skill += self.Kgood * (1 + (RTIME_MEAN - rtime[i]) * self.rtime_effect)
+            else: skill += self.Kbad
+
+class PFAElo(ModelC): 
+
+    def __init__(self, Kgood = 3.0, Kbad = 0.2, time_effect = 80):
         self.Kgood = Kgood
         self.Kbad = Kbad
         self.time_effect = time_effect
 
     def __str__(self):
-        return  "PFA " + `self.Kgood` + " " + `self.Kbad` + " " + `self.time_effect`
+        return  "PFAElo " + `self.Kgood` + " " + `self.Kbad` + " " + `self.time_effect`
         
     def process_sequence(self, initskill, ans, qtype, time, rtime):
         skill = initskill
         for i in range(len(ans)):
-            timedif = max(0, time[i]-time[i-1])
-            local_skill = skill + float(self.time_effect) / ( 1 + timedif )
+            local_skill = skill
+            if i > 0:
+                timedif = max(0, time[i]-time[i-1])
+                local_skill += float(self.time_effect) / ( 1 + timedif )
             pred = sigmoid_shift(local_skill, random_factor(qtype[i]))
             if i > 0: self.save_to_log(pred, ans[i])
-            if ans[i]: skill += self.Kgood
-            else: skill += self.Kbad
+            if ans[i]:
+                skill += self.Kgood * (1 - pred)
+            else:
+                skill -= self.Kbad * pred
 
+            
 ########## outdated, probably poor model, not worth further extensions
 ###### hmmm.... with rmse2 quite good...
             

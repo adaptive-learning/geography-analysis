@@ -3,6 +3,7 @@
 import sys
 import pylab as plt
 from geography_common import *
+from models_prior_knowledge import *
 
 def visit_stats(filename = "data/export.csv"):
     f = open(filename)
@@ -60,6 +61,7 @@ def solved_difficulty():
     continents = [ 227, 228, 229, 230, 231 ]
     for i in range(len(continents)):
         cont = continents[i]
+        print i, continents[i], states[cont]
         v = []
         for p in onmap[cont]:
             if p in solved.keys() and p in D.keys():
@@ -72,16 +74,25 @@ def solved_difficulty():
     plt.show()
 
 def histDG():
-    G = read_dict("data/raschG.csv")
+#    G = read_dict("data/raschG.csv")
+#    D = read_dict("data/raschD.csv")
+    m = EloModel()
+    data = read_data("data/data_first.csv")
+    m.process_data(data)
+    G, D = m.G, m.D
     plt.hist(G.values())    
     plt.figure()
-    D = read_dict("data/raschD.csv")
     onmap = process_placerelation()
+    onmap[228229] = onmap[228][:]
+    onmap[228229].extend(onmap[229][:]) # spojeni amerik
     states, _ = process_states()
-    continents = [ 227, 228, 229, 230, 231 ]
+    states[228229] = "Amerika"
+    continents = [ 227, 228229, 231, 232, 230 ]
     d = [ [ D[p] for p in onmap[c] ]
           for c in continents ]
-    plt.hist(d, 9, histtype='barstacked') 
+#    plt.hist(d, 7, histtype='barstacked')
+#    plt.hist(d, range(-4, 4), histtype='barstacked')
+    plt.hist(d, [ i - 0.5 for i in range(-4, 4)], histtype='barstacked') 
     plt.legend([states[c] for c in continents], loc=2)
     plt.show()
 

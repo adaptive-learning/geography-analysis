@@ -61,6 +61,7 @@ def repeated_attempts(foutput, finput, minlen = 3, mintimestep = 0):
         userplace[up].append((int(p[0]), c, p[4]+p[7], datetime.datetime.strptime(p[5], '%Y-%m-%d %H:%M:%S'), rtime))
     stats_all, stats_ones = 0.0, 0
     all_ones = {}
+    hist = {}
                 
     for up in userplace.keys():
         if len(userplace[up]) >= minlen:  
@@ -81,11 +82,13 @@ def repeated_attempts(foutput, finput, minlen = 3, mintimestep = 0):
                     if c=="1": local_stats_ones += 1
                 prev_date = d
             if local_stats_all >= minlen:
+                hist[local_stats_all] = hist.get(local_stats_all, 0) + 1
                 out.write(line[:-1]+"\n")
                 stats_all += local_stats_all
                 stats_ones += local_stats_ones
     out.close()
     print "  Ratio correct:", round(stats_ones / stats_all, 3)
+#    print hist
 
 ########## save results for use in 2. phase ##############
     
@@ -116,7 +119,7 @@ if __name__ == "__main__":
     process("data/data.csv", exportfile)
     process("data/data_first.csv", exportfile, only_first = 1)
     process("data/data_first60.csv", exportfile, only_first = 1, pmin = 60)
-    repeated_attempts("data/repeated_attempts.csv", exportfile, mintimestep = 0)
+    repeated_attempts("data/repeated_attempts.csv", exportfile, mintimestep = 0, minlen = 4)
     if len(sys.argv) > 2 and sys.argv[2] == 'DG':    
         data = read_data("data/data_first.csv")
         save_resultsDG(data)
