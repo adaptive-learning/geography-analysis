@@ -10,15 +10,38 @@ import sys
 def compare_model_estimates(data, m1, m2):
     print "Comparing model estimates"
     m1.process_data(data)
-    print m1.name, "done"
+    print str(m1), "done"
     m2.process_data(data)
-    print m2.name, "done"
+    print str(m2), "done"
     scatter_dicts_with_same_keys(m1.D, m2.D)
-    plt.xlabel(m1.name + " estimate")
-    plt.ylabel(m2.name + " estimate")
+    plt.xlabel(str(m1) + " estimate")
+    plt.ylabel(str(m2) + " estimate")
+    plt.savefig("results/elo-rasch-estimates.svg")
     plt.show()
 
-def history_plots(data, states, selection = [ 178, 63, 196, 211, 67, 97,118 ]):
+def compare_estimates_two_halves(data, Model):
+    m1 = Model()
+    m2 = Model()
+    print "starting"
+    data1, data2 = split_data_user_level(data)
+    print "data split"
+    m1.process_data(data1)
+    print "m1 ok"
+    m2.process_data(data2)
+    print "m2 ok"
+    scatter_dicts_with_same_keys(m1.D, m2.D)
+    plt.figure()
+    attempts, diffs = [], []
+    for p in m1.D:
+        if p in m2.D:
+            attempts.append( m1.place_attempts[p] + m2.place_attempts[p] )
+            diffs.append( abs(m1.D[p] - m2.D[p]) )
+    plt.scatter(attempts, diffs)
+    plt.xscale('log')
+    plt.show()
+    
+#[ 178, 63, 196, 211, 67, 97,118 ]    
+def history_plots(data, states, selection = [ 222, 150, 119, 212, 107, 165 ]):
     m = EloModel()
     m.process_data(data)
     leg = []
@@ -26,10 +49,12 @@ def history_plots(data, states, selection = [ 178, 63, 196, 211, 67, 97,118 ]):
         if place in m.history:
             plt.plot(m.history[place])
             leg.append(states[place])
-    plt.xlim([0,300])
-    plt.legend(leg)
+    plt.xlim([0,350])
+    plt.legend(leg, loc=2)
+    plt.savefig("results/elo-history.svg")
     plt.show()
 
+    
 ############# analysis of predictions ###################
     
 def compare_model_predictions(data):
@@ -112,8 +137,8 @@ def on_cont(places, onmap, continents):
 def subskills(data):
     onmap = process_placerelation()
     states, _ = process_states()
-    cont1 = [ 230, 231]
-    cont2 = [ 227, 228, 229 ]
+    cont1 = [ 230, 227]
+    cont2 = [  231, 228, 229 ]
     data1 = data[ on_cont(data.place, onmap, cont1) ]
     data2 = data[ on_cont(data.place, onmap, cont2) ]
     m1, m2 = EloModel(), EloModel()
@@ -131,8 +156,11 @@ def subskills(data):
     print "spearman", round(spearman(*zip(*skills)),2)
     print "pearson", round(pearson(*zip(*skills)),2)
     plt.scatter(*zip(*skills))
+    plt.xlim([-3.5, 3.5])
+    plt.ylim([-3.5, 3.5])
     plt.xlabel(",".join([states[c] for c in cont1]))
     plt.ylabel(",".join([states[c] for c in cont2]))
+    plt.savefig("results/subskills.svg")
     plt.show()
     
     
@@ -152,6 +180,8 @@ def main():
         compare_model_estimates(data, Rasch(), EloModel())
     elif sys.argv[1] == "compare2":
         compare_model_estimates(data, SuccessRateModel(), EloModel())
+    elif sys.argv[1] == "compare_halves":
+        compare_estimates_two_halves(data, EloModel)
     elif sys.argv[1] == "predictions":
         compare_model_predictions(data)        
     elif sys.argv[1] == "history":

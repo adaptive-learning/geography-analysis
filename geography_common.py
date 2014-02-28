@@ -12,6 +12,8 @@ import pylab as plt
 
 # lot of small stuff doing rutine work... bit messy
 
+# TODO pouzivam "data" pro ruzny veci (zakladni, combined) - procistit
+
 ################# reading data ######################
 
 def read_json(filename):
@@ -57,6 +59,17 @@ def read_data(filename = "data/data.csv"):
     add_norm_user_times(d)
     return d
 
+# tohle je nejaky desne pomaly.... asi ten pandas styl neni uplne ono
+def split_data_user_level(data, ratio = 0.8):
+    users = data.user.unique()
+    count = int(len(users) * ratio)
+    sample = random.sample(users, count)
+    in_sample = data.user.map(lambda x: x in sample)
+    data1 = data[in_sample]
+    data2 = data[in_sample == False]
+    return data1, data2
+
+
 # reading two column csv as dict; ... bit of a hack
 def read_dict(filename):
     f = open(filename)
@@ -66,6 +79,7 @@ def read_dict(filename):
         p = line.rstrip().split(',')
         d[int(p[0])] = float(p[1])
     return d
+
 
 ###### combined data - predikce z rasch modelu + data o opakovanych odpovedich
 
@@ -106,15 +120,25 @@ def test_printout(data):
         for i in range(data[s,p]['n']):
             print "\t",data[s,p]['ans'][i], data[s,p]['time'][i]
 
-
-# not used currently
-def split_data_user_level(data, ratio = 0.8):
-    users = data.user.unique()
-    count = int(len(users) * ratio)
-    sample = random.sample(users, count)
-    in_sample = data.user.map(lambda x: x in sample)
-    data1 = data[in_sample]
-    data2 = data[in_sample == False]
+# nepekny styl, tady by se hodil pandas pristup...            
+def split_combined_data_user_level(data, ratio = 0.5):
+    all_students = {}
+    for p in data:
+        for s in data[p]:
+            all_students[s] = 1
+    l = all_students.keys()
+    count = int(len(l) * ratio)
+    sample = random.sample(l, count)
+    for s in sample: all_students[s] = 2
+    data1, data2 = {}, {}
+    for p in data:
+        data1[p] = {}
+        data2[p] = {}
+        for s in data[p]:
+            if all_students[s] == 1: # nekopiruju, snad se mi to nevymsti
+                data1[p][s] = data[p][s]
+            else:
+                data2[p][s] = data[p][s]           
     return data1, data2
 
 ################## small helper functions ################
@@ -189,6 +213,16 @@ def log_logloss(log):
         else:
             s += math.log(max(1-log[i][0], 0.02)) # trochu hack
     return - s / n
+
+def log_LL(log):
+    s = 0.0
+    n = len(log)
+    for i in range(n):
+        if log[i][1]:
+            s += math.log(log[i][0])
+        else:
+            s += math.log(max(1-log[i][0], 0.01)) # trochu hack 
+    return s
 
 def mae(estimated, correct):
     return np.mean(np.absolute(np.array(correct) - np.array(estimated)))
@@ -287,3 +321,4 @@ class MultipleRunLogger:
                 t[i][j] = float(sum(self.data[self.row_names[i],self.col_names[j]])) / len(self.data[self.row_names[i],self.col_names[j]])
         return t
         # use plt.imshow(t)
+

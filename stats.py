@@ -61,7 +61,7 @@ def solved_difficulty():
     continents = [ 227, 228, 229, 230, 231 ]
     for i in range(len(continents)):
         cont = continents[i]
-        print i, continents[i], states[cont]
+#        print i, continents[i], states[cont]
         v = []
         for p in onmap[cont]:
             if p in solved.keys() and p in D.keys():
@@ -71,6 +71,8 @@ def solved_difficulty():
     plt.xlabel("solved")
     plt.ylabel("difficulty")
     plt.legend(leg, loc = 1)
+    for p in sorted(D.keys(), key = lambda x: D[x]):
+        print p, states[p][:18].ljust(20).encode("UTF8"), D[p], "\t", solved.get(p, 0)
     plt.show()
 
 def histDG():
@@ -92,8 +94,10 @@ def histDG():
           for c in continents ]
 #    plt.hist(d, 7, histtype='barstacked')
 #    plt.hist(d, range(-4, 4), histtype='barstacked')
-    plt.hist(d, [ i - 0.5 for i in range(-4, 4)], histtype='barstacked') 
+    plt.hist(d, [ i - 0.5 for i in range(-4, 4)], histtype='barstacked')
+    plt.ylim([0,50])
     plt.legend([states[c] for c in continents], loc=2)
+    plt.savefig("results/hist-states.svg")
     plt.show()
 
 def skill_hist():

@@ -74,11 +74,11 @@ def sensi_analysis_gridPFA2(data):
     sensi_analysis_grid2d(data, PFAplus, parameters)
 
     
-def sensi_analysis_per_place(data, Model, parameters):
+def sensi_analysis_per_place(data, Model, parameters, limit=140):
     states, _ = process_states()
     D = read_dict("data/raschD.csv")
     for place in data:
-        if len(data[place].keys()) < 140: continue
+        if len(data[place].keys()) < limit: continue
         best = float("inf")        
         bestparam = None
         for param in parameters:
@@ -98,7 +98,7 @@ def PFA_sensi_analysis_per_place(data):
                    for Kb in [-0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6]
                   ]    
     sensi_analysis_per_place(data, PFAbasic, parameters)        
-
+    
 def Elo_sensi_analysis_per_place(data):
     parameters = [ { "alpha": a }
                    for a in [ 0.5, 1.0, 1.5, 2.0, 2.5, 3.0 ]
@@ -111,18 +111,29 @@ def PFAplus_sensi_analysis_per_place(data):
                    for Kb in [ -0.2, 0, 0.2, 0.4, 0.6 ]
                   ]    
     sensi_analysis_per_place(data, PFAplus, parameters)            
+
+def PFAplus_sensi_analysis_per_place_split(data):
+    parameters = [ { "Kgood": Kg, "Kbad": Kb }
+                   for Kg in [ 2, 2.5, 3, 3.5, 4 ]
+                   for Kb in [ -0.4, -0.2, 0, 0.2, 0.4 ]
+                  ]
+    data1, data2 = split_combined_data_user_level(data)
+    print "data1"
+    sensi_analysis_per_place(data1, PFAplus, parameters, 80)        
+    print "data2"
+    sensi_analysis_per_place(data2, PFAplus, parameters, 80)        
     
-def compare_models(data, models, textable = 0, roccurves = 0):
+def compare_models(data, models, textable = 1, roccurves = 0):
     leg = []
     for m in models:
         leg.append(str(m))
         m.process_data(data)
         if textable:
-            print str(m), "&", round(log_rmse(m.log), 3), "&", round(log_logloss(m.log), 3), "&", round(log_auc(m.log), 3), r"\\"
+            print str(m), "&", round(log_rmse(m.log), 3), "&", round(log_LL(m.log), 3), "&", round(log_auc(m.log), 3), r"\\"
         else:
             print str(m).ljust(30),
             print "\tRMSE    \t", round(log_rmse(m.log), 3), 
-            print "\tLL\t", round(log_logloss(m.log), 3),
+            print "\tLL\t", round(log_LL(m.log), 3),
             print "\tAUC    \t", round(log_auc(m.log), 3)
             if roccurves: do_roc(*zip(*m.log))
     if roccurves:
@@ -240,7 +251,8 @@ def main():
     elif sys.argv[1] == "placesPFA":
         PFA_sensi_analysis_per_place(data) 
     elif sys.argv[1] == "placesPFA+":
-        PFAplus_sensi_analysis_per_place(data)        
+#        PFAplus_sensi_analysis_per_place(data)
+        PFAplus_sensi_analysis_per_place_split(data)                
     elif sys.argv[1] == "placesElo":
         Elo_sensi_analysis_per_place(data) 
     elif sys.argv[1] == "compare":
